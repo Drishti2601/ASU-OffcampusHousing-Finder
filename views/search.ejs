@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Apartments - ASU Housing Finder</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <nav>
+        <span>Welcome, <%= userName %>!</span>
+        <div>
+            <a href="/search">Search</a>
+            <a href="/favorites">My Favorites</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <h1>Search Apartments</h1>
+        
+        <form method="POST" action="/search" class="search-form">
+            <div class="form-row">
+                <input type="number" name="max_rent" placeholder="Max Rent ($)" 
+                    value="<%= searchValues.max_rent %>">
+                <input type="number" name="bedrooms" placeholder="Min Bedrooms" min="0" max="3"
+                    value="<%= searchValues.bedrooms %>">
+                <input type="number" step="0.1" name="max_distance" placeholder="Max Distance (miles)"
+                    value="<%= searchValues.max_distance %>">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+        
+        <% if (totalCount > 0) { %>
+            <h2>Results (<span id="showing-count"><%= currentCount %></span> of <%= totalCount %> apartments)</h2>
+            <div class="results" id="results-container">
+                <% apartments.forEach(apt => { %>
+                <div class="apartment-card">
+                    <h3><%= apt.propertyname %></h3>
+                    <p>Unit: <%= apt.unitnumber %> | <%= apt.bedrooms %> bed, <%= apt.bathrooms %> bath</p>
+                    <p class="price">$<%= apt.monthlyrent %>/month</p>
+                    <p><%= apt.squarefeet %> sq ft | <%= apt.distancefromcampus %> miles from ASU</p>
+                    <a href="/apartment/<%= apt.unitid %>" class="btn">View Details</a>
+                </div>
+                <% }); %>
+            </div>
+            
+            <% if (currentCount < totalCount) { %>
+                <div class="load-more-container">
+                    <button id="load-more-btn" class="btn btn-primary">
+                        Load More Apartments (<%= totalCount - currentCount %> remaining)
+                    </button>
+                    <div id="loading" style="display: none; text-align: center; margin: 20px;">
+                        <p style="color: #8C1D40; font-size: 18px;">Loading...</p>
+                    </div>
+                </div>
+            <% } %>
+        <% } else if (apartments.length === 0 && searchValues.max_rent !== '') { %>
+            <p class="center" style="margin-top: 40px; font-size: 18px;">
+                No apartments found matching your criteria. Try adjusting your filters.
+            </p>
+        <% } else { %>
+            <p class="center" style="margin-top: 40px; font-size: 18px;">
+                Use the filters above to search for apartments
+            </p>
+        <% } %>
+    </div>
+    
+    <script>
+        let currentOffset = <%= currentCount %>;
+        const totalCount = <%= totalCount %>;
+        
+        document.getElementById('load-more-btn')?.addEventListener('click', async function() {
+            const btn = this;
+            const loading = document.getElementById('loading');
+            
+            btn.style.display = 'none';
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetch('/load-more', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'offset=' + currentOffset
+                });
+                
+                const data = await response.json();
+                
+                if (data.apartments && data.apartments.length > 0) {
+                    const container = document.getElementById('results-container');
+                    
+                    data.apartments.forEach(apt => {
+                        const card = document.createElement('div');
+                        card.className = 'apartment-card';
+                        card.innerHTML = `
+                            <h3>${apt.propertyname}</h3>
+                            <p>Unit: ${apt.unitnumber} | ${apt.bedrooms} bed, ${apt.bathrooms} bath</p>
+                            <p class="price">$${apt.monthlyrent}/month</p>
+                            <p>${apt.squarefeet} sq ft | ${apt.distancefromcampus} miles from ASU</p>
+                            <a href="/apartment/${apt.unitid}" class="btn">View Details</a>
+                        `;
+                        container.appendChild(card);
+                    });
+                    
+                    currentOffset += data.apartments.length;
+                    document.getElementById('showing-count').textContent = currentOffset;
+                    
+                    if (currentOffset >= totalCount || !data.hasMore) {
+                        btn.remove();
+                        loading.remove();
+                    } else {
+                        btn.textContent = `Load More Apartments (${totalCount - currentOffset} remaining)`;
+                        btn.style.display = 'inline-block';
+                        loading.style.display = 'none';
+                    }
+                } else {
+                    btn.remove();
+                    loading.innerHTML = '<p style="color: #8C1D40;">No more apartments to load</p>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                loading.innerHTML = '<p style="color: #dc3545;">Error loading apartments</p>';
+            }
+        });
+    </script>
+</body>
+</html>

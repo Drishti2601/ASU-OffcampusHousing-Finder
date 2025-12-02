@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Favorites - ASU Housing Finder</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <nav>
+        <span>Welcome, <%= userName %>!</span>
+        <div>
+            <a href="/search">Search</a>
+            <a href="/favorites">My Favorites</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <h1>My Saved Apartments</h1>
+        
+        <% if (favorites.length > 0) { %>
+            <div class="results">
+                <% favorites.forEach(fav => { %>
+                <div class="apartment-card">
+                    <h3><%= fav.propertyname %></h3>
+                    <p>Unit: <%= fav.unitnumber %> | <%= fav.bedrooms %> bedrooms</p>
+                    <p class="price">$<%= fav.monthlyrent %>/month</p>
+                    <p><%= fav.distancefromcampus %> miles from ASU</p>
+                    <div class="button-group">
+                        <a href="/apartment/<%= fav.unitid %>" class="btn">View Details</a>
+                        <a href="/remove-favorite/<%= fav.favoriteid %>" class="btn btn-danger">Remove</a>
+                    </div>
+                </div>
+                <% }); %>
+            </div>
+        <% } else { %>
+            <p class="center" style="margin-top: 40px; font-size: 18px;">
+                No favorites saved yet. <a href="/search">Search apartments</a> to get started!
+            </p>
+        <% } %>
+    </div>
+</body>
+</html>
